@@ -1,6 +1,4 @@
-//
-// Created by mylord on 2019/9/26.
-//
+
 
 #ifndef MYPING_PING_H
 #define MYPING_PING_H
@@ -18,29 +16,29 @@
 #include <sys/time.h>
 #include <arpa/inet.h>
 
-#define PACK_SIZE 32                //最小的ICMP数据包大小，8字节的ICMP包头，16字节的DATA，其中DATA是timeval结构体
+#define PACK_SIZE 32                
 
 class Ping {
 private:
-    std::string input_domain;       //用来存储通过main函数的参数传入的域名或者ip
-    std::string backup_ip;          //通过输入的域名或者ip转化成为的ip备份
+    std::string input_domain;       
+    std::string backup_ip;          
 
     int sock_fd;
 
-    int max_wait_time;              //最大等待时间
+    int max_wait_time;              
 
-    int send_pack_num;              //发送的数据包数量
-    int recv_pack_num;              //收到的数据包数量
-    int lost_pack_num;              //丢失的数据包数量
+    int send_pack_num;              
+    int recv_pack_num;              
+    int lost_pack_num;              
 
-    struct sockaddr_in send_addr;   //发送到目标的套接字结构体
-    struct sockaddr_in recv_addr;   //接受来自目标的套接字结构体
+    struct sockaddr_in send_addr;   
+    struct sockaddr_in recv_addr;   
 
-    char send_pack[PACK_SIZE];      //用于保存发送的ICMP包
-    char recv_pack[PACK_SIZE + 20];      //用于保存接收的ICMP包
+    char send_pack[PACK_SIZE];      
+    char recv_pack[PACK_SIZE + 20]; 
 
-    struct timeval first_send_time; //第一次发送ICMP数据包时的UNIX时间戳
-    struct timeval recv_time;       //接收ICMP数据包时的UNIX时间戳
+    struct timeval first_send_time; 
+    struct timeval recv_time;       
 
     double min_time;
     double max_time;
@@ -65,4 +63,4 @@ public:
 };
 
 
-#endif //MYPING_PING_H
+#endif 
