@@ -1,5 +1,10 @@
 #include "ping.h"
-
+#include "loggers.h"
+void Diag();
+char logText[2048];
+extern void DiagLog();
+extern int errorCode;
+extern int AddMessageToLog(const char * message);
 Ping::Ping(const char * ip, int max_wait_time){
     this->input_domain = ip;
 
@@ -17,23 +22,29 @@ Ping::Ping(const char * ip, int max_wait_time){
 Ping::~Ping() {
     if(close(sock_fd) == -1) {
         fprintf(stderr, "Close socket error:%s \n\a", strerror(errno));
+        errorCode = 3;
+        Diag();
         exit(1);
     }
 }
 
 void Ping::CreateSocket(){
-    struct protoent * protocol;            
-    unsigned long in_addr;                  
-    struct hostent host_info, * host_pointer; 
+    struct protoent * protocol;
+    unsigned long in_addr;
+    struct hostent host_info, * host_pointer;
     char buff[2048];                         
     int errnop = 0;                         
 
     if((protocol = getprotobyname("icmp")) == NULL){
         fprintf(stderr, "Get protocol error:%s \n\a", strerror(errno));
+        errorCode = 0;
+        Diag();
         exit(1);
     }
     if((sock_fd = socket(AF_INET, SOCK_RAW, protocol->p_proto)) == -1){
-        fprintf(stderr, "Greate RAW socket error:%s \n\a", strerror(errno));
+        fprintf(stderr, "Create RAW socket error:%s \n\a", strerror(errno));
+        errorCode = 3;
+        Diag();
         exit(1);
     }
 
@@ -43,8 +54,9 @@ void Ping::CreateSocket(){
 
     if((in_addr = inet_addr(input_domain.c_str())) == INADDR_NONE){
         if(gethostbyname_r(input_domain.c_str(), &host_info, buff, sizeof(buff), &host_pointer, &errnop)){
-            //非法域名
             fprintf(stderr, "Get host by name error:%s \n\a", strerror(errno));
+            errorCode = 2;
+            Diag();
             exit(1);
         } else{
             this->send_addr.sin_addr = *((struct in_addr *)host_pointer->h_addr);
@@ -60,7 +72,6 @@ void Ping::CreateSocket(){
 
     gettimeofday(&first_send_time, NULL);
 }
-
 unsigned short Ping::CalculateCksum(unsigned short * send_pack, int pack_size){
     int check_sum = 0;              
     int nleft = pack_size;          
@@ -114,6 +125,8 @@ void Ping::SendPacket() {
 
     if((sendto(sock_fd, send_pack, pack_size, 0, (const struct sockaddr *)&send_addr, sizeof(send_addr))) < 0){
         fprintf(stderr, "Sendto error:%s \n\a", strerror(errno));
+        errorCode = 4;
+        Diag();
         exit(1);
     }
 
@@ -158,14 +171,14 @@ int Ping::ResolvePakcet(int pack_size) {
             max_time = rtt;
 
         sum_time += rtt;
-
-        printf("%d byte from %s : icmp_seq=%u ttl=%d time=%.1fms\n",
+        sprintf(logText,"%d byte from %s : icmp_seq=%u ttl=%d time=%.1fms\n",
                icmp_len,
                inet_ntoa(recv_addr.sin_addr),
                icmp_pointer->icmp_seq,
                ip_pointer->ip_ttl,
                rtt);
-
+        printf(logText);
+        AddMessageToLog(logText);
         recv_pack_num++;
     } else{
         printf("throw away the old package %d\tbyte from %s\ticmp_seq=%u\ticmp_id=%u\tpid=%d\n",
@@ -238,6 +251,21 @@ void Ping::statistic() {
             send_pack_num, recv_pack_num, (double)(send_pack_num - recv_pack_num) / (double)send_pack_num,
             total_time);
     printf("rtt min/avg/max = %.3f/%.3f/%.3f ms\n", min_time, (double)sum_time / recv_pack_num, max_time);
-
-
+    sprintf(logText, "\n--- %s ping statistics ---\n",input_domain.c_str());
+    if (AddMessageToLog(logText)==-1) {
+        DiagLog();
+    }
+    sprintf(logText, "%d packets transmitted, %d received, %.0f%% packet loss, time %.0f ms\n",
+            send_pack_num, recv_pack_num, (double)(send_pack_num - recv_pack_num) / (double)send_pack_num,
+            total_time);
+    if (AddMessageToLog(logText)==-1) {  
+        DiagLog();  
+    }    
+    sprintf(logText, "rtt min/avg/max = %.3f/%.3f/%.3f ms\n", min_time, (double)sum_time / recv_pack_num, max_time);
+    if (AddMessageToLog(logText)==-1) {  
+        DiagLog();  
+    }    
+    if (AddMessageToLog("Pinging is done")==-1) { 
+        DiagLog();
+    }    
 }

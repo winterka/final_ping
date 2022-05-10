@@ -3,4 +3,4 @@ project(MyPing)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(MyPing main.cpp src/ping.cpp src/ping.h)
+add_executable(MyPing main.cpp src/ping.cpp src/ping.h src/loggers.cpp src/loggers.h)
