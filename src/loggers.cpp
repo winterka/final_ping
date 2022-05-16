@@ -31,8 +31,7 @@ int AddMessageToLog(const char * message);// Ввод сообщение в ло
 void DiagLog();// Ошибки лога
 void Diag();//Ошибки программы
 ////////////////////////////////////////////////////////
-
-int logFunc()
+int logFunc() // функция вывода сообщения в логи
 {
 	setlocale(LC_ALL, "Rus");
 	addressLog();
@@ -44,11 +43,11 @@ int logFunc()
 	return 0;
 }
 ///////////////////////////////////////////////////////
-void addressLog()// Определение адреса директории логов
+void addressLog()// определение адреса директории логов
 {
 	sprintf(Dirname, "/home/%s/Desktop/PING", getenv("USER"));
 }
-char * getTime()
+char * getTime() // функция для получения времени 
 {
 	char * tim;
 	time_t tt=time(nullptr);
@@ -57,7 +56,7 @@ char * getTime()
 	return tim;
 
 }
-char * getCurrentDateTime()// Определение даты и времени создания файла лога
+char * getCurrentDateTime()// определение даты и времени создания файла лога
 {
 	tm *t;
 	char *datetime = new char[512];
@@ -87,7 +86,7 @@ char * getCurrentDateTime()// Определение даты и времени 
 	return datetime;
 }
 
-int createLog()// Создание файла лога
+int createLog()// создание файла лога
 {
 	sprintf(fileName,"%s/log%s.txt", Dirname, getCurrentDateTime());
 	if(deleteLogFile()!=0)
@@ -103,16 +102,16 @@ int createLog()// Создание файла лога
 	return 0;
 }
 
-int createdirlog()//Создание директории для лога
+int createdirlog()// создание директории для лога
 {
 	char path_buff[2048];
 	sprintf(path_buff, "mkdir -p %s", Dirname);
-	if(system(path_buff) == 0)//Создание директории для лога 
+	if(system(path_buff) == 0)// создание директории для лога 
 		return 0;
-	return -1;//если не удалось создать директорию лога
+	return -1;// если не удалось создать директорию лога
 }
 
-int deleteLogFile()// Удаление старого файла лога при переполнении
+int deleteLogFile()// удаление старого файла лога при переполнении
 {
 	int filesize=getFileSize();
 	if (filesize==-1)
@@ -123,14 +122,14 @@ int deleteLogFile()// Удаление старого файла лога при
 	{
 		char comant[2048];
 		sprintf(comant,"find %s -type f -printf '%%T+ %%p\\n' | sort | head -n1 | awk '{print $2}' | xargs rm -v", Dirname);
-		if(system(comant)!=0)//Удаление самого старого лога
+		if(system(comant)!=0)// удаление самого старого лога
 			return -1;
 		return 0;
 	}
 	return 0;
 }
 
-int getFileSize()// Определение размера директории
+int getFileSize() // определение размера директории
 {
 	DIR * directory;
 	struct dirent *dir;
@@ -147,9 +146,9 @@ int getFileSize()// Определение размера директории
 		else
 			return -1;
 	}
-	for (dir = readdir(directory); dir != NULL; dir = readdir(directory))
+	for (dir = readdir(directory); dir != NULL; dir = readdir(directory)) // цикл ищет директорию по названию
 	{
-		sprintf(address,"%s/%s", Dirname, dir->d_name);
+		sprintf(address,"%s/%s", Dirname, dir->d_name); 
 	    exists = stat(address, &buf);
 
 		if (exists < 0) 
@@ -165,7 +164,7 @@ int getFileSize()// Определение размера директории
 	return total_size;
 }
 
-int AddMessageToLog(const char * message)// Ввод сообщение в лог
+int AddMessageToLog(const char * message)// ввод сообщение в лог
 {
 	if(deleteLogFile()!=0)
 		return -1;
@@ -180,7 +179,7 @@ int AddMessageToLog(const char * message)// Ввод сообщение в ло�
 	return 0;
 }
 
-void DiagLog()
+void DiagLog() // вывод ошибки логов в консоль  
 {
 	char * errorText = new char [128];
 	switch(errno)
@@ -283,7 +282,7 @@ void DiagLog()
 	}
 }
 
-void Diag()
+void Diag() // вывод ошибки программы в консоль
 {
 	char logText[1024];
 	switch(errorCode)

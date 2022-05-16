@@ -7,8 +7,8 @@ extern int errorCode; // глобальная переменная хранящ�
 extern int AddMessageToLog(const char * message); //функция для записи в лог
 void Diag(); // функция для обработки возможных ошибок и записи их в лог
 //переменные для временного хранения сообщений/строк ?
-char logText[4048];
-char buff[2048];  
+char logText[4048]; 
+char buff[4048];  
 
 int icmp_len, ip_header_len; // переменные для хранения размеров структур icmp и ip
 int errnop = 0; // переменная для хранения кодов системных ошибок  
@@ -21,11 +21,12 @@ struct timeval * time_pointer; //указатель времени
 struct timeval timeout; //переменная для хранения времени ожидания пакета
 struct timeval * time_send; //указатель на время отправки пакета
 
-
 // Описание функции Ping
-Ping::Ping(const char * ip, int max_wait_time){
+Ping::Ping(const char * ip, int max_wait_time)
+{
     //const char * ip - адрес по которому отправляются пакеты, int max_wait_time - максимальное время ожидания пакета. 
     this->input_domain = ip;
+    //printf(ip);
 
     this->max_wait_time = max_wait_time < 3 ? max_wait_time : 3;
 
@@ -39,42 +40,46 @@ Ping::Ping(const char * ip, int max_wait_time){
     this->sum_time = 0;
 }
 
-Ping::~Ping() {
+Ping::~Ping() 
+{
     // обработка ошибки закрытия сокета
     if(close(sock_fd) == -1) {
         fprintf(stderr, "Close socket error:%s \n\a", strerror(errno));
-        // присваиваем код ошибки, проверяем нет ли ошибки при записи в логи, обрабатываем код ошибки.
+        // присваиваем код ошибки
         errorCode = 3;
-        if (AddMessageToLog(logText)==-1)
-            DiagLog();
-        Diag();
+        if (AddMessageToLog(logText)==-1) // проверяем нет ли ошибки при записи в логи
+            DiagLog(); // вывод ошибки в лог
+        Diag(); // вывод ошибки на экран
         exit(1);
     }
 }
 
 // описание функции создания сокета
-void Ping::CreateSocket(){                      
+void Ping::CreateSocket()
+{                      
     // проверяем является ли используемый протокол протоколом ICMP
     // В случае ошибки присваиваем код ошибки и обрабатываем его    
-    if((protocol = getprotobyname("icmp")) == NULL){
-        fprintf(stderr, "Get protocol error:%s \n\a", strerror(errno));
+    if((protocol = getprotobyname("icmp")) == NULL)
+    {
+        fprintf(stderr, "Get protocol error:%s \n\a", strerror(errno)); // вывод ошибки на экран 
         errorCode = 0;
         if (AddMessageToLog(logText)==-1)
-            DiagLog();
-        Diag();
+            DiagLog(); // вывод ошибки в лог
+        Diag(); // вывод ошибки на экран
         exit(1);
     }
     // пробуем создать сокет с помощью функции socket() из стандартной библиотеки.
-    if((sock_fd = socket(AF_INET, SOCK_RAW, protocol->p_proto)) == -1){
+    if((sock_fd = socket(AF_INET, SOCK_RAW, protocol->p_proto)) == -1)
+    {
         //AF_INET - обозначает то что для коммуникации мы используем ipv4
         //SOCK_RAW - тип сокета, тип RAW позволяет использовать низкоуровневый функционал
         //protocol->p_proto - задает протокол.
         //В случае ошибки создания сокета присваиваем код ошибки и обрабатываем.
-        fprintf(stderr, "Create RAW socket error:%s \n\a", strerror(errno));
+        fprintf(stderr, "Create RAW socket error:%s \n\a", strerror(errno)); // вывод ошибки на экран 
         errorCode = 3;
         if (AddMessageToLog(logText)==-1)
-            DiagLog();
-        Diag();
+            DiagLog(); // вывод ошибки в лог
+        Diag(); // вывод ошибки на экран
         exit(1);
     }
     //Присваиваем идентификатор процессу
@@ -82,20 +87,24 @@ void Ping::CreateSocket(){
     send_addr.sin_family = AF_INET;
     // Функция inet_addr() преобразует обычный вид IP-адреса cp (из номеров и точек) в двоичный код в сетевом порядке расположения байтов
     //Если входящий адрес неверен, то возвращается INADDR_NONE
-    if((in_addr = inet_addr(input_domain.c_str())) == INADDR_NONE){
+    if((in_addr = inet_addr(input_domain.c_str())) == INADDR_NONE)
+    {
         //В случае неудачи пробуем получить хост по имени домена, в случае неудачи обрабатываем ошибку.
-        if(gethostbyname_r(input_domain.c_str(), &host_info, buff, sizeof(buff), &host_pointer, &errnop)){
-            fprintf(stderr, "Get host by name error:%s \n\a", strerror(errno));
+        if(gethostbyname_r(input_domain.c_str(), &host_info, buff, sizeof(buff), &host_pointer, &errnop))
+        {
+            fprintf(stderr, "Get host by name error:%s \n\a", strerror(errno)); // вывод ошибки на экран 
             if (AddMessageToLog(logText)==-1)
-                DiagLog();
+                DiagLog(); // вывод ошибки в лог
             errorCode = 2;
-            Diag();
+            Diag(); // вывод ошибки на экран 
             exit(1);
-        } else{
+        } else
+        {
             // передаем полученный адрес в структуру send_addr
             this->send_addr.sin_addr = *((struct in_addr *)host_pointer->h_addr);
         }
-    } else{
+    } else
+    {
         //присваиваем в структуру адрес от которого мы согласны получать пакеты
         this->send_addr.sin_addr.s_addr = in_addr;
     }
@@ -110,31 +119,34 @@ void Ping::CreateSocket(){
     gettimeofday(&first_send_time, NULL);
 }
 
-//Описание функции расчета контрольной суммы ДОПИСАТЬ.
-unsigned short Ping::CalculateCksum(unsigned short * send_pack, int pack_size){
+//Описание функции расчета контрольной суммы
+unsigned short Ping::CalculateCksum(unsigned short * send_pack, int pack_size)
+{   // переменные для контрольной суммы
     int check_sum = 0;              
     int nleft = pack_size;          
     unsigned short * p = send_pack; 
     unsigned short temp;            
-
-    while(nleft > 1){
+    // цикл вписывает контрольную сумму пока не проверит весь пакет
+    while(nleft > 1) 
+    {
         check_sum += *p++;          
         nleft -= 2;
     }
-    if(nleft == 1){
+    if(nleft == 1) // механизм обработки последнего элемента
+    {
         
-        *(unsigned char *)&temp = *(unsigned char *)p;
-        check_sum += temp;
+        *(unsigned char *)&temp = *(unsigned char *)p; // добавляем пакет во временное хранилище
+        check_sum += temp;  
     }
 
-    check_sum = (check_sum >> 16) + (check_sum & 0xffff);  
+    check_sum = (check_sum >> 16) + (check_sum & 0xffff); // побитовый сдвиг контрольной суммы 
     check_sum += (check_sum >> 16);                         
     temp = ~check_sum;              
 
     return temp;
 }
 
-//Описание функции создания пакета.
+// описание функции создания пакета
 int Ping::GeneratePacket()
 {
     //инциализация переменной для хранения размерности пакета
@@ -162,10 +174,11 @@ int Ping::GeneratePacket()
     return pack_size;
 }
 //описание функции создания пакета
-void Ping::SendPacket() {
+void Ping::SendPacket()
+{
     if (AddMessageToLog("Package generation...")==-1)
     {
-        DiagLog();
+        DiagLog(); 
     }
     //получаем размер пакета из функции создания пакета
     int pack_size = GeneratePacket();
@@ -178,7 +191,8 @@ void Ping::SendPacket() {
         DiagLog();
     }
     // пробуем отправить пакет с помощью функции sendto()
-    if((sendto(sock_fd, send_pack, pack_size,MSG_DONTWAIT, (const struct sockaddr *)&send_addr, sizeof(send_addr))) < 0){
+    if((sendto(sock_fd, send_pack, pack_size,MSG_DONTWAIT, (const struct sockaddr *)&send_addr, sizeof(send_addr))) < 0)
+    {
         //sock_fd - дескриптор нашего сокета
         //send_pack - данные для отправки
         //pack_size - размер данных для отправки в битах
@@ -187,7 +201,7 @@ void Ping::SendPacket() {
         // sizeof(send_addr))) < 0 - размер адреса отправки запроса в битах
         // в случае неудачи обрабатываем ошибку
         printf("Error");
-        fprintf(stderr, "Sendto error:%s \n\a", strerror(errno));
+        fprintf(stderr, "Sendto error:%s \n\a", strerror(errno)); // вывод ошибки на экран 
         if (AddMessageToLog(logText)==-1)
                 DiagLog();
         errorCode = 4;
@@ -202,7 +216,8 @@ void Ping::SendPacket() {
     this->send_pack_num++;
 }
 //описание функции обработки пакета
-int Ping::ResolvePakcet(int pack_size) {
+int Ping::ResolvePakcet(int pack_size)
+{
     //инциализация переменной для хранения пакета
     struct ip * ip_pointer = (struct ip *)recv_pack;
     //присваиваем длину полученного заголовка
@@ -212,19 +227,22 @@ int Ping::ResolvePakcet(int pack_size) {
     //расчет размера полученного пакета
     icmp_len = pack_size - ip_header_len;                       
     //обрабатываем потерю пакета
-    if(icmp_len < 8) {
-        printf("received ICMP pack lenth:%d(%d) is error!\n", pack_size, icmp_len);
+    if(icmp_len < 8) 
+    {
+        printf("received ICMP pack lenth:%d(%d) is error!\n", pack_size, icmp_len); // вывод ошибки на экран 
         lost_pack_num++;
         return -1;
     }
     //в случае если полученные данные равны отправленным присваиваем в переменную время отправки пакета
     if((icmp_pointer->icmp_type == ICMP_ECHOREPLY) &&
         (backup_ip == inet_ntoa(recv_addr.sin_addr)) &&
-        (icmp_pointer->icmp_id == getpid())){
+        (icmp_pointer->icmp_id == getpid()))
+    {
 
         time_send = (struct timeval *)icmp_pointer->icmp_data;
         //расчитываем время отправки полученного пакета
-        if((recv_time.tv_usec -= time_send->tv_usec) < 0) {
+        if((recv_time.tv_usec -= time_send->tv_usec) < 0) 
+        {
             --recv_time.tv_sec;
             recv_time.tv_usec += 10000000;
         }
@@ -252,7 +270,8 @@ int Ping::ResolvePakcet(int pack_size) {
                 DiagLog();
         //увеличиваем счетчик полученных пакетов
         recv_pack_num++;
-    } else{
+    } else
+    {
         //если данные отправленного пакета не совпадают с данными полученного то 
         //"выкидываем" полученный пакет
         printf("throw away the old package %d\tbyte from %s\ticmp_seq=%u\ticmp_id=%u\tpid=%d\n",
@@ -264,12 +283,14 @@ int Ping::ResolvePakcet(int pack_size) {
 
 }
 //описание функции получения пакета
-void Ping::RecvPacket() {
+void Ping::RecvPacket()
+{
     //инциализация перменных для хранения размера полученного пакета и размера адреса
     int recv_size, fromlen;
     fromlen = sizeof(struct sockaddr);
     //проверяем что бы кол-во полученных пакетов не превышало кол-во отправленных
-    while(recv_pack_num + lost_pack_num < send_pack_num) {
+    while(recv_pack_num + lost_pack_num < send_pack_num) 
+    {
         //инциализация структуры для хранения дескрипторов сокета
         fd_set fds;
         //очищает созданную структуру
@@ -285,7 +306,8 @@ void Ping::RecvPacket() {
         //select - проверяет состояние готовности сокетов к I/O операциям
         int n = select(maxfd, &fds, NULL, NULL, &timeout);
 
-        switch(n) {
+        switch(n) 
+        {
             //обрабатываем ошибку функции select()
             case -1:
                 fprintf(stderr, "Select error:%s \n\a", strerror(errno));
@@ -301,13 +323,15 @@ void Ping::RecvPacket() {
                 break;
             default:
                 
-                if(FD_ISSET(sock_fd, &fds)) {
+                if(FD_ISSET(sock_fd, &fds)) 
+                {
                     //если сокет находится в множестве/структуре но размер полученного пакета меньше 0 - обрабатываем потерю пакета
                     if((recv_size = recvfrom(sock_fd, recv_pack, sizeof(recv_pack),
                             0, (struct sockaddr *)&recv_addr, (socklen_t *)&fromlen)) < 0) {
                         fprintf(stderr, "packet error(size:%d):%s \n\a", recv_size, strerror(errno));
                         lost_pack_num++;
-                    } else{
+                    } else
+                    {
                         //обрабатываем получение и обработку пакета
                         gettimeofday(&recv_time, NULL);
 
@@ -319,14 +343,16 @@ void Ping::RecvPacket() {
     }
 }
 //описание функции вывода статистики
-void Ping::statistic() {
+void Ping::statistic() 
+{
     //инициализация переменной для хранения общего времени работы
     double total_time;
     //переменная для хранения времени окончания работы
     struct timeval final_time;
     gettimeofday(&final_time, NULL);
     //расчет общего времени работы программы
-    if((final_time.tv_usec -= first_send_time.tv_usec) < 0) {
+    if((final_time.tv_usec -= first_send_time.tv_usec) < 0)
+    {
         --final_time.tv_sec;
         final_time.tv_usec += 10000000;
     }
@@ -338,20 +364,24 @@ void Ping::statistic() {
             total_time);
     printf("rtt min/avg/max = %.3f/%.3f/%.3f ms\n", min_time, (double)sum_time / recv_pack_num, max_time);
     sprintf(logText, "\n--- %s ping statistics ---\n",input_domain.c_str());
-    if (AddMessageToLog(logText)==-1) {
+    if (AddMessageToLog(logText)==-1)
+    {
         DiagLog();
     }
     sprintf(logText, "%d packets transmitted, %d received, %.0f%% packet loss, time %.0f ms\n",
             send_pack_num, recv_pack_num, (double)(send_pack_num - recv_pack_num) / (double)send_pack_num,
             total_time);
-    if (AddMessageToLog(logText)==-1) {  
+    if (AddMessageToLog(logText)==-1) 
+    {  
         DiagLog();  
     }    
     sprintf(logText, "rtt min/avg/max = %.3f/%.3f/%.3f ms\n", min_time, (double)sum_time / recv_pack_num, max_time);
-    if (AddMessageToLog(logText)==-1) {  
+    if (AddMessageToLog(logText)==-1) 
+    {  
         DiagLog();  
     }    
-    if (AddMessageToLog("Pinging is done correctly")==-1) { 
+    if (AddMessageToLog("Pinging is done correctly")==-1) 
+    { 
         DiagLog();
     }    
 }
