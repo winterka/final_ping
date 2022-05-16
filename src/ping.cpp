@@ -265,7 +265,6 @@ int Ping::ResolvePakcet(int pack_size)
                ip_pointer->ip_ttl,
                rtt);
         printf(logText);
-        AddMessageToLog(logText);
         if (AddMessageToLog(logText)==-1)
                 DiagLog();
         //увеличиваем счетчик полученных пакетов
