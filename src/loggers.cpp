@@ -1,4 +1,3 @@
-#include "loggers.h"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -12,6 +11,7 @@
 #include<time.h>
 #include <errno.h>
 #include <cstring>
+#include "../include/loggers.h"
 
 //Глобальные переменные 
 int MAX_SIZE = 30000;
@@ -32,15 +32,15 @@ void DiagLog();// Ошибки лога
 void Diag();//Ошибки программы
 ////////////////////////////////////////////////////////
 
-int main_func()
+int logFunc()
 {
 	setlocale(LC_ALL, "Rus");
 	addressLog();
 	switch(createLog())
 	{
-		case -1: DiagLog();break;
+		case -1: DiagLog();
+		break;
 	}
-	//AddMessageToLog("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII");
 	return 0;
 }
 ///////////////////////////////////////////////////////

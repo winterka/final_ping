@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <cstring>
 
-////////////////////////////////////////////////////////
+int logFunc();
 void addressLog();// Определение адреса директории логов
 char * getCurrentDateTime();// Определение даты и времени создания файла лога
 char * getTime();// Определение даты и времени
@@ -26,8 +26,7 @@ int getFileSize();// Определение размера директории
 int AddMessageToLog(const char * message);// Ввод сообщение в лог
 void DiagLog();// Ошибки лога
 void Diag();//Ошибки программы
-int main_func();
 int errorCode;
-////////////////////////////////////////////////////////
+
 #endif
 

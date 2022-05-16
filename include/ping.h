@@ -58,7 +58,6 @@ public:
 
     void SendPacket();
     void RecvPacket();
-
     void statistic();
 };
 

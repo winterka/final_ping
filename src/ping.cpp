@@ -1,10 +1,14 @@
-#include "ping.h"
-#include "loggers.h"
+#include <fcntl.h>
+#include "../include/ping.h"
+#include "../include/loggers.h"
+
+
 void Diag();
 char logText[2048];
 extern void DiagLog();
 extern int errorCode;
 extern int AddMessageToLog(const char * message);
+
 Ping::Ping(const char * ip, int max_wait_time){
     this->input_domain = ip;
 
@@ -23,6 +27,8 @@ Ping::~Ping() {
     if(close(sock_fd) == -1) {
         fprintf(stderr, "Close socket error:%s \n\a", strerror(errno));
         errorCode = 3;
+        if (AddMessageToLog(logText)==-1)
+            DiagLog();
         Diag();
         exit(1);
     }
@@ -38,12 +44,16 @@ void Ping::CreateSocket(){
     if((protocol = getprotobyname("icmp")) == NULL){
         fprintf(stderr, "Get protocol error:%s \n\a", strerror(errno));
         errorCode = 0;
+        if (AddMessageToLog(logText)==-1)
+            DiagLog();
         Diag();
         exit(1);
     }
     if((sock_fd = socket(AF_INET, SOCK_RAW, protocol->p_proto)) == -1){
         fprintf(stderr, "Create RAW socket error:%s \n\a", strerror(errno));
         errorCode = 3;
+        if (AddMessageToLog(logText)==-1)
+            DiagLog();
         Diag();
         exit(1);
     }
@@ -55,6 +65,8 @@ void Ping::CreateSocket(){
     if((in_addr = inet_addr(input_domain.c_str())) == INADDR_NONE){
         if(gethostbyname_r(input_domain.c_str(), &host_info, buff, sizeof(buff), &host_pointer, &errnop)){
             fprintf(stderr, "Get host by name error:%s \n\a", strerror(errno));
+            if (AddMessageToLog(logText)==-1)
+                DiagLog();
             errorCode = 2;
             Diag();
             exit(1);
@@ -67,6 +79,7 @@ void Ping::CreateSocket(){
 
     this->backup_ip = inet_ntoa(send_addr.sin_addr);
 
+    AddMessageToLog("Creating Socket and sending first bytes");
     printf("PING %s (%s) %d(%d) bytes of data.\n", input_domain.c_str(),
             backup_ip.c_str(), PACK_SIZE - 8, PACK_SIZE + 20);
 
@@ -123,8 +136,11 @@ int Ping::GeneratePacket()
 void Ping::SendPacket() {
     int pack_size = GeneratePacket();
 
-    if((sendto(sock_fd, send_pack, pack_size, 0, (const struct sockaddr *)&send_addr, sizeof(send_addr))) < 0){
+    if((sendto(sock_fd, send_pack, pack_size,MSG_DONTWAIT, (const struct sockaddr *)&send_addr, sizeof(send_addr))) < 0){
+        printf("Error");
         fprintf(stderr, "Sendto error:%s \n\a", strerror(errno));
+        if (AddMessageToLog(logText)==-1)
+                DiagLog();
         errorCode = 4;
         Diag();
         exit(1);
@@ -154,14 +170,13 @@ int Ping::ResolvePakcet(int pack_size) {
         (icmp_pointer->icmp_id == getpid())){
 
         time_send = (struct timeval *)icmp_pointer->icmp_data;
-
+        
         if((recv_time.tv_usec -= time_send->tv_usec) < 0) {
             --recv_time.tv_sec;
             recv_time.tv_usec += 10000000;
         }
 
         rtt = (recv_time.tv_sec - time_send->tv_sec) * 1000 + (double)recv_time.tv_usec / 1000.0;
-
         if(rtt > (double)max_wait_time * 1000)
             rtt = max_time;
 
@@ -179,6 +194,8 @@ int Ping::ResolvePakcet(int pack_size) {
                rtt);
         printf(logText);
         AddMessageToLog(logText);
+        if (AddMessageToLog(logText)==-1)
+                DiagLog();
         recv_pack_num++;
     } else{
         printf("throw away the old package %d\tbyte from %s\ticmp_seq=%u\ticmp_id=%u\tpid=%d\n",
@@ -193,7 +210,6 @@ int Ping::ResolvePakcet(int pack_size) {
 void Ping::RecvPacket() {
     int recv_size, fromlen;
     fromlen = sizeof(struct sockaddr);
-
     while(recv_pack_num + lost_pack_num < send_pack_num) {
         fd_set fds;
         FD_ZERO(&fds);              
@@ -210,6 +226,10 @@ void Ping::RecvPacket() {
         switch(n) {
             case -1:
                 fprintf(stderr, "Select error:%s \n\a", strerror(errno));
+                if (AddMessageToLog(logText)==-1)
+                    DiagLog();
+                errorCode = 0;
+                Diag();
                 exit(1);
             case 0:
                 printf("select time out, lost packet!\n");
@@ -265,7 +285,7 @@ void Ping::statistic() {
     if (AddMessageToLog(logText)==-1) {  
         DiagLog();  
     }    
-    if (AddMessageToLog("Pinging is done")==-1) { 
+    if (AddMessageToLog("Pinging is done correctly")==-1) { 
         DiagLog();
     }    
 }
