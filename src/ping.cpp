@@ -7,7 +7,7 @@ extern int errorCode; // глобальная переменная хранящ�
 extern int AddMessageToLog(const char * message); //функция для записи в лог
 void Diag(); // функция для обработки возможных ошибок и записи их в лог
 //переменные для временного хранения сообщений/строк ?
-char logText[2048];
+char logText[4048];
 char buff[2048];  
 
 int icmp_len, ip_header_len; // переменные для хранения размеров структур icmp и ip
@@ -163,8 +163,20 @@ int Ping::GeneratePacket()
 }
 //описание функции создания пакета
 void Ping::SendPacket() {
+    if (AddMessageToLog("Package generation...")==-1)
+    {
+        DiagLog();
+    }
     //получаем размер пакета из функции создания пакета
     int pack_size = GeneratePacket();
+    if (AddMessageToLog("Package generated.")==-1)
+    {
+        DiagLog();
+    }
+    if (AddMessageToLog("Sending a package...")==-1)
+    {
+        DiagLog();
+    }
     // пробуем отправить пакет с помощью функции sendto()
     if((sendto(sock_fd, send_pack, pack_size,MSG_DONTWAIT, (const struct sockaddr *)&send_addr, sizeof(send_addr))) < 0){
         //sock_fd - дескриптор нашего сокета
@@ -181,6 +193,10 @@ void Ping::SendPacket() {
         errorCode = 4;
         Diag();
         exit(1);
+    }
+    if (AddMessageToLog("Package sent")==-1)
+    {
+        DiagLog();
     }
     //увеличиваем счетчик отправленных пакетов
     this->send_pack_num++;
@@ -267,7 +283,7 @@ void Ping::RecvPacket() {
         timeout.tv_usec = 0;
 
         //select - проверяет состояние готовности сокетов к I/O операциям
-        int n = select(maxfd, NULL, &fds, NULL, &timeout);
+        int n = select(maxfd, &fds, NULL, NULL, &timeout);
 
         switch(n) {
             //обрабатываем ошибку функции select()
