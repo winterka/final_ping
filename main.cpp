@@ -3,13 +3,14 @@
 #include "include/utils.h"
 #include "include/loggers.h"  // Заголовочный файл описывающий функции для логирования
 
-Ping * p;
 
-int logFunc();
-struct sigaction action;
+Ping * p; //указатель на класс Ping
+int logFunc(); // начало работы записи в файл лога
+struct sigaction action; // структура для обработки сигнала
 // Обработчик сигналов, после остановки программы <CTRL + C> будет выведена статистика
 // и остановлена работа программы.
-void SingnalHandler(int signo) {
+void SingnalHandler(int signo)
+{
 
     p->statistic();
 
@@ -17,7 +18,8 @@ void SingnalHandler(int signo) {
 }
 
 
-int main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) 
+{
     logFunc();
     checkParams(argc,argv);
     ///////////////////////////////////
@@ -26,14 +28,14 @@ int main(int argc, char * argv[]) {
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     sigaction(SIGINT,&action,NULL);
-    ///////////////////////////////////
+  /////////////////////////////////////
     Ping ping(argv[1], 1);
-    p = &ping;
-    ping.CreateSocket();
-    while(1)
+    p = &ping; 
+    ping.CreateSocket(); // Открываем соединение
+    while(1) // Запускаем отправку/принятие пакетов с задержкой в 1 секунду
     {
-        ping.SendPacket();
-        ping.RecvPacket();
-        sleep(1);
+        ping.SendPacket(); // Отправляем пакет
+        ping.RecvPacket(); // Получаем пакет
+        sleep(1); // Ожидаем следующей итерации 
     }
 }
